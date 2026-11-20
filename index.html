@@ -13,6 +13,9 @@
   --pink:#ff6b8b; --blue:#4fc3f7; --yellow:#ffca28; --green:#43a047; --purple:#ab47bc; --orange:#ff7043;
   color-scheme: light;
 }
+/* Needed outside the Claude preview: .screen/#party set display, which would otherwise beat the hidden attribute */
+[hidden]{display:none!important}
+:root{padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px);box-sizing:border-box}
 html,body{height:100%}
 body{margin:0;background:var(--bg);color:var(--fg);font-family:Fredoka,"Segoe UI",system-ui,sans-serif;
   padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));
