@@ -1,0 +1,622 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover,maximum-scale=1,user-scalable=no">
+<meta name="claude:viewport-fit-sides" content="cover">
+<title>Happy Kids Games</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Fredoka:wght@500;700&display=swap">
+<style>
+/* Layout: one screen at a time, big tap targets, single light theme */
+:root{
+  --bg:#fff7e6; --fg:#3b2f5b; --card:#ffffff; --line:#3b2f5b; --shadow:#e5d9c3;
+  --pink:#ff6b8b; --blue:#4fc3f7; --yellow:#ffca28; --green:#43a047; --purple:#ab47bc; --orange:#ff7043;
+  color-scheme: light;
+}
+html,body{height:100%}
+body{margin:0;background:var(--bg);color:var(--fg);font-family:Fredoka,"Segoe UI",system-ui,sans-serif;
+  padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));
+  -webkit-tap-highlight-color:transparent;user-select:none;-webkit-user-select:none;touch-action:manipulation}
+#app{height:100%}
+.screen{height:100%;display:flex;flex-direction:column;gap:12px;padding-block:12px;box-sizing:border-box}
+h1{margin:0;font-size:40px;text-align:center;text-wrap:balance}
+h2{margin:0;font-size:26px}
+button{font-family:inherit;color:var(--fg);cursor:pointer;border:0}
+
+/* Buttons grow a little while pressed */
+button{transition:transform .12s ease}
+button:active:not(:disabled){transform:scale(1.12)}
+
+/* Cute motion */
+.pic,.float,.ic{display:inline-block;line-height:1}
+.float{animation:float 2.4s ease-in-out infinite}
+@keyframes float{0%,100%{transform:translateY(0) rotate(0)}50%{transform:translateY(-8px) rotate(3deg)}}
+.boing{animation:boing .6s ease}
+@keyframes boing{0%{transform:scale(1)}25%{transform:scale(1.4) rotate(-10deg)}50%{transform:scale(1.22) rotate(8deg)}75%{transform:scale(1.3) rotate(-4deg)}100%{transform:scale(1)}}
+.opt.right .pic{animation:jump .7s ease forwards}
+@keyframes jump{0%{transform:scale(1)}35%{transform:scale(1.4) translateY(-12px) rotate(-6deg)}65%{transform:scale(1.15) rotate(4deg)}100%{transform:scale(1.2)}}
+@keyframes shake{20%,60%{transform:translateX(-8px)}40%,80%{transform:translateX(8px)}}
+@media (prefers-reduced-motion: reduce){*{animation:none!important;transition:none!important}}
+
+/* Shared bars */
+.top{display:flex;align-items:center;gap:10px}
+.titlebox{flex:1;min-width:0;text-align:center}
+.lvl{font-size:20px;font-weight:700;color:var(--pink)}
+.bar{display:flex;align-items:center;justify-content:space-between;gap:10px}
+.iconbtn{width:66px;height:66px;border-radius:50%;background:var(--card);box-shadow:0 5px 0 var(--shadow);font-size:32px;flex:none}
+.score{font-size:26px;font-weight:700;background:var(--card);padding:6px 14px;border-radius:999px;box-shadow:0 4px 0 var(--shadow);font-variant-numeric:tabular-nums;white-space:nowrap}
+.dots{display:flex;gap:8px}
+.dots i{width:22px;height:22px;border-radius:50%;background:var(--shadow)}
+.dots i.on{background:var(--yellow)}
+.hint{text-align:center;font-size:24px;min-height:30px;font-weight:700}
+
+/* Name screen */
+#name{justify-content:center;align-items:center;gap:22px}
+#name .ic{font-size:130px}
+#nameForm{display:flex;flex-direction:column;gap:18px;width:100%;max-width:420px}
+#nameInput{font:inherit;font-size:34px;text-align:center;padding:16px;border-radius:22px;border:4px solid var(--line);
+  background:var(--card);color:var(--fg);user-select:text;-webkit-user-select:text;box-sizing:border-box;width:100%}
+#nameInput:focus{outline:4px solid var(--yellow);outline-offset:2px}
+.bigbtn{padding:22px;border-radius:999px;background:var(--pink);color:#fff;font-size:32px;font-weight:700;box-shadow:0 6px 0 #d94f6f}
+
+/* Menu */
+.chip{background:var(--card);border-radius:999px;box-shadow:0 4px 0 var(--shadow);padding:12px 18px;font-size:22px;font-weight:700;
+  min-width:0;flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;text-align:left}
+.menu{flex:1;min-height:0;overflow-y:auto;display:grid;grid-template-columns:1fr 1fr;gap:14px;align-content:start;padding:6px 4px 14px}
+.menu .tile{background:var(--card);border-radius:28px;box-shadow:0 7px 0 var(--shadow);min-height:160px;
+  display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px;font-size:26px;font-weight:700;padding:10px 6px}
+.menu .tile .ic{font-size:78px}
+.menu .tile small{font-size:18px;color:var(--pink)}
+.menu .tile:nth-child(2n) .ic{animation-delay:.6s}
+.menu .tile:nth-child(3n) .ic{animation-delay:1.2s}
+
+/* Quiz */
+.stage{flex:1;min-height:90px;background:var(--card);border-radius:30px;box-shadow:0 7px 0 var(--shadow);
+  display:grid;place-items:center;text-align:center;padding:12px;overflow:hidden}
+.word{font-size:min(96px,17vw);font-weight:700;overflow-wrap:anywhere;line-height:1.05}
+.apples{font-size:52px;line-height:1.15;overflow-wrap:anywhere;max-width:100%}
+.options{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}
+.options .opt:last-child:nth-child(odd){grid-column:1 / -1}
+.opt{min-width:0;min-height:150px;border-radius:26px;background:var(--card);box-shadow:0 6px 0 var(--shadow);
+  display:grid;place-items:center;font-size:100px;font-weight:700;color:var(--fg);padding:8px;overflow:hidden}
+.opt svg{width:100%;max-width:140px;height:auto;aspect-ratio:1;display:block}
+.opt.right{background:#c8f7c5}
+.opt.wrong{background:#ffd6cc;animation:shake .4s}
+.opt:disabled{cursor:default}
+
+/* Piano */
+.keys{flex:1;min-height:0;display:flex;gap:6px}
+.key{flex:1;min-width:0;border-radius:20px;box-shadow:0 6px 0 var(--shadow);display:flex;align-items:flex-end;justify-content:center;
+  padding-bottom:16px;font-size:22px;font-weight:700;color:#fff;text-shadow:0 2px 0 rgba(0,0,0,.25)}
+.key.lit{filter:brightness(1.4) saturate(1.2);transform:scale(1.08)}
+
+/* Coloring */
+.palette{display:flex;justify-content:center;gap:8px;touch-action:none;padding-bottom:6px}
+.swatch{flex:0 1 84px;aspect-ratio:1;min-width:0;border-radius:50%;border:5px solid var(--card);box-shadow:0 5px 0 var(--shadow);touch-action:none}
+.swatch.sel{border-color:var(--line);transform:scale(1.12)}
+.paint{flex:1;min-height:0;background:var(--card);border-radius:28px;box-shadow:0 7px 0 var(--shadow);display:flex;padding:4px;box-sizing:border-box;touch-action:none}
+.paint svg{width:100%;height:100%;max-height:100%;margin:auto;overflow:visible}
+.region{fill:#ffffff;stroke:var(--line);stroke-width:4;stroke-linejoin:round;cursor:pointer;transform-box:fill-box;transform-origin:center}
+.deco{fill:none;stroke:var(--line);stroke-width:4;stroke-linecap:round;pointer-events:none}
+.eye{fill:var(--line);pointer-events:none}
+.blob{position:fixed;width:84px;height:84px;border-radius:50%;border:6px solid #fff;box-shadow:0 6px 18px rgba(59,47,91,.35);
+  transform:translate(-50%,-50%);pointer-events:none;z-index:50}
+
+/* Celebration */
+#party{position:fixed;inset:0;display:grid;place-items:center;background:rgba(255,247,230,.8);z-index:60;pointer-events:none}
+.party-text{font-size:72px;font-weight:700;color:var(--pink);text-align:center;padding:0 16px;animation:partyPop .7s ease}
+@keyframes partyPop{0%{transform:scale(.2) rotate(-20deg);opacity:0}60%{transform:scale(1.2) rotate(6deg);opacity:1}100%{transform:scale(1)}}
+</style>
+</head>
+<body>
+<div id="app">
+
+  <!-- Player name -->
+  <section class="screen" id="name" hidden>
+    <span class="ic float">🧒</span>
+    <h1>What's your name?</h1>
+    <form id="nameForm" autocomplete="off">
+      <input id="nameInput" maxlength="16" placeholder="Player name" autocapitalize="words" aria-label="Player name">
+      <button class="bigbtn" type="submit">Let's Play! ▶</button>
+    </form>
+  </section>
+
+  <!-- Menu -->
+  <section class="screen" id="menu" hidden>
+    <div class="bar">
+      <button class="chip" id="hello" aria-label="Change player"></button>
+      <span class="score">⭐ 0</span>
+      <button class="iconbtn" id="musicBtn" aria-label="Music">🎵</button>
+    </div>
+    <div class="menu">
+      <button class="tile" data-mode="coloring"><span class="ic float">🎨</span>Coloring<small data-tile="coloring"></small></button>
+      <button class="tile" data-mode="warna"><span class="ic float">🌈</span>Colors<small data-tile="warna"></small></button>
+      <button class="tile" data-mode="numbers"><span class="ic float">🔢</span>Numbers<small data-tile="numbers"></small></button>
+      <button class="tile" data-mode="shape"><span class="ic float">🔺</span>Shapes<small data-tile="shape"></small></button>
+      <button class="tile" data-mode="animal"><span class="ic float">🐶</span>Animals<small data-tile="animal"></small></button>
+      <button class="tile" data-mode="bunyi"><span class="ic float">🔊</span>Animal Sounds<small data-tile="bunyi"></small></button>
+      <button class="tile" data-mode="besarkecil"><span class="ic float">🐘</span>Big &amp; Small<small data-tile="besarkecil"></small></button>
+      <button class="tile" data-mode="makanan"><span class="ic float">🍛</span>Food<small data-tile="makanan"></small></button>
+      <button class="tile" data-mode="abc"><span class="ic float">🔤</span>ABC<small data-tile="abc"></small></button>
+      <button class="tile" data-mode="piano"><span class="ic float">🎹</span>Piano<small data-tile="piano"></small></button>
+    </div>
+  </section>
+
+  <!-- Quiz games -->
+  <section class="screen" id="quiz" hidden>
+    <div class="top">
+      <button class="iconbtn" data-back aria-label="Back">⬅</button>
+      <div class="titlebox"><h2 id="quizTitle"></h2><div class="lvl" data-lvl>Level 1</div></div>
+      <button class="iconbtn" id="replay" aria-label="Hear again">🔊</button>
+    </div>
+    <div class="bar"><span class="dots" data-dots aria-label="Level progress"></span><span class="score">⭐ 0</span></div>
+    <div class="stage" id="prompt"></div>
+    <div class="hint" id="hint"></div>
+    <div class="options" id="options"></div>
+  </section>
+
+  <!-- Piano -->
+  <section class="screen" id="piano" hidden>
+    <div class="top">
+      <button class="iconbtn" data-back aria-label="Back">⬅</button>
+      <div class="titlebox"><h2>Piano</h2><div class="lvl" data-lvl>Level 1</div></div>
+      <button class="iconbtn" id="replayPiano" aria-label="Listen again">🔊</button>
+    </div>
+    <div class="bar"><span class="dots" data-dots aria-label="Level progress"></span><span class="score">⭐ 0</span></div>
+    <div class="hint" id="hintPiano"></div>
+    <div class="keys" id="keys"></div>
+  </section>
+
+  <!-- Coloring -->
+  <section class="screen" id="coloring" hidden>
+    <div class="top">
+      <button class="iconbtn" data-back aria-label="Back">⬅</button>
+      <div class="titlebox"><h2>Coloring</h2><div class="lvl" id="lvlC">Level 1</div></div>
+      <button class="iconbtn" id="clearPaint" aria-label="Clear">🧽</button>
+    </div>
+    <div class="bar"><span class="hint">Drag a color to the picture</span><span class="score">⭐ 0</span></div>
+    <div class="paint"><svg id="canvas" viewBox="0 0 300 300" aria-label="Coloring picture"></svg></div>
+    <div class="palette" id="palette"></div>
+  </section>
+</div>
+
+<div id="party" hidden><div class="party-text" id="partyText"></div></div>
+
+<script src="data.js"></script>
+<script src="clips.js"></script>
+<script>
+const D = window.GAME;
+const $ = s => document.querySelector(s);
+const rnd = a => a[Math.floor(Math.random() * a.length)];
+const shuffle = a => a.slice().sort(() => Math.random() - 0.5);
+const MAX_LEVEL = 10;
+const PER_LEVEL = 5; // correct answers needed to level up
+
+/* Saved progress: per-phone convenience, the game still works if storage is blocked */
+const KEY = 'permainan-anak-v1';
+let save = { name: '', score: 0, levels: {}, music: true };
+try {
+  const s = JSON.parse(localStorage.getItem(KEY));
+  if (s && typeof s === 'object') {
+    save.name = String(s.name || '').slice(0, 16);
+    save.score = Number(s.score) || 0;
+    save.levels = s.levels && typeof s.levels === 'object' ? s.levels : {};
+    save.music = s.music !== false;
+  }
+} catch (e) {}
+function persist() { try { localStorage.setItem(KEY, JSON.stringify(save)); } catch (e) {} }
+const levelOf = mode => Math.min(MAX_LEVEL, Math.max(1, Number(save.levels[mode]) || 1));
+
+/* Timers die when the screen changes, so a late timer never acts on another game */
+let session = 0;
+function later(fn, ms) { const s = session; setTimeout(() => { if (s === session) fn(); }, ms); }
+
+/* Audio: one context for effects, piano notes and background music */
+let audio = null;
+function ensureAudio() {
+  try {
+    audio = audio || new (window.AudioContext || window.webkitAudioContext)();
+    if (audio.state === 'suspended') audio.resume();
+  } catch (e) { audio = null; }
+  return audio;
+}
+const midi = n => 440 * Math.pow(2, (n - 69) / 12);
+// Soft piano-like tone: a quick attack and a long fade
+function tone(freq, t, dur, vol, dest) {
+  const g = audio.createGain();
+  g.gain.setValueAtTime(0.0001, t);
+  g.gain.exponentialRampToValueAtTime(vol, t + 0.015);
+  g.gain.exponentialRampToValueAtTime(0.0001, t + dur);
+  g.connect(dest);
+  [[1, 'triangle', 1], [2, 'sine', 0.25]].forEach(([h, type, v]) => {
+    const o = audio.createOscillator(), og = audio.createGain();
+    o.type = type; o.frequency.value = freq * h; og.gain.value = v;
+    o.connect(og); og.connect(g); o.start(t); o.stop(t + dur + 0.05);
+  });
+}
+function beep(freqs) {
+  if (!ensureAudio()) return;
+  freqs.forEach((f, i) => {
+    const o = audio.createOscillator(), g = audio.createGain();
+    o.frequency.value = f; o.connect(g); g.connect(audio.destination);
+    const t = audio.currentTime + i * 0.12;
+    g.gain.setValueAtTime(0.2, t);
+    g.gain.exponentialRampToValueAtTime(0.001, t + 0.2);
+    o.start(t); o.stop(t + 0.2);
+  });
+}
+const fanfare = () => beep([523, 659, 784, 1047]);
+
+/* Background music: slow piano, C - Am - F - G. Starts on the first tap (phones block sound before that) */
+const PROG = [[48, 60, 64, 67], [45, 57, 60, 64], [41, 53, 57, 60], [43, 55, 59, 62]];
+const BEAT = 0.9;
+let musicGain = null, musicTimer = null, beat = 0, nextBeat = 0;
+function scheduleMusic() {
+  while (nextBeat < audio.currentTime + 0.6) {
+    const chord = PROG[Math.floor(beat / 4) % 4], b = beat % 4;
+    if (b === 0) tone(midi(chord[0]), nextBeat, 3.4, 0.45, musicGain);
+    tone(midi(chord[[1, 2, 3, 2][b]]), nextBeat, 1.8, 0.3, musicGain);
+    if (b === 0 && Math.floor(beat / 4) % 2 === 1) tone(midi(chord[3] + 12), nextBeat + BEAT * 0.5, 2.2, 0.18, musicGain);
+    nextBeat += BEAT; beat++;
+  }
+}
+function startMusic() {
+  if (!save.music || musicTimer || !$('#piano').hidden || !ensureAudio()) return;
+  musicGain = audio.createGain();
+  musicGain.gain.value = 0.12;
+  musicGain.connect(audio.destination);
+  nextBeat = audio.currentTime + 0.1; beat = 0;
+  scheduleMusic();
+  musicTimer = setInterval(scheduleMusic, 200);
+}
+function stopMusic() {
+  clearInterval(musicTimer); musicTimer = null;
+  if (musicGain && audio) {
+    const g = musicGain;
+    g.gain.setTargetAtTime(0.0001, audio.currentTime, 0.25);
+    setTimeout(() => g.disconnect(), 1500);
+  }
+  musicGain = null;
+}
+document.addEventListener('pointerdown', startMusic);
+function showMusicBtn() { $('#musicBtn').textContent = save.music ? '🎵' : '🔇'; }
+$('#musicBtn').onclick = () => {
+  save.music = !save.music; persist(); showMusicBtn();
+  if (save.music) startMusic(); else stopMusic();
+};
+
+/* Voice: recorded Google clips first; the phone's own voice only for a missing phrase */
+let player = null;
+function stopVoice() {
+  if (player) { player.pause(); player = null; }
+  try { window.speechSynthesis && speechSynthesis.cancel(); } catch (e) {}
+}
+function say(text) {
+  stopVoice();
+  const clip = window.CLIPS && window.CLIPS[text];
+  if (clip) { player = new Audio(clip); player.play().catch(() => {}); return; }
+  try {
+    if (!('speechSynthesis' in window)) return;
+    const u = new SpeechSynthesisUtterance(text);
+    const v = speechSynthesis.getVoices().find(x => /^en/i.test(x.lang));
+    if (v) u.voice = v;
+    u.lang = v ? v.lang : 'en-US';
+    u.rate = 0.9;
+    speechSynthesis.speak(u);
+  } catch (e) {}
+}
+const praise = () => { beep([523, 659, 784]); say(rnd(D.GOOD)); };
+const oops = () => { beep([300, 220]); say(D.BAD); };
+
+/* Animation helpers */
+function boing(el) {
+  el.classList.remove('boing');
+  void el.getBoundingClientRect(); // restart the animation on every tap
+  el.classList.add('boing');
+  el.addEventListener('animationend', () => el.classList.remove('boing'), { once: true });
+}
+document.addEventListener('pointerdown', e => {
+  const el = e.target.closest && e.target.closest('.pic, .ic, .region');
+  if (el) boing(el);
+});
+let partyTimer;
+function party(text) {
+  const t = $('#partyText');
+  t.textContent = text;
+  t.style.animation = 'none'; void t.offsetWidth; t.style.animation = '';
+  $('#party').hidden = false;
+  clearTimeout(partyTimer);
+  partyTimer = setTimeout(() => $('#party').hidden = true, 1900);
+}
+
+/* Score and levels */
+function showScore() { document.querySelectorAll('.score').forEach(s => s.textContent = '⭐ ' + save.score); }
+function addScore(n) { save.score += n; persist(); showScore(); }
+
+let cur = null, streak = 0, missed = false, lastId = null;
+const level = () => levelOf(cur);
+function renderLevel() {
+  document.querySelectorAll('[data-lvl]').forEach(e => e.textContent = 'Level ' + level() + ' / ' + MAX_LEVEL);
+  const dots = Array.from({ length: PER_LEVEL }, (_, i) => `<i class="${i < streak ? 'on' : ''}"></i>`).join('');
+  document.querySelectorAll('[data-dots]').forEach(e => e.innerHTML = dots);
+}
+// Shared by every game: points, level progress, then the next round
+function scoreCorrect(next) {
+  addScore(missed ? 5 : 10); // full points on the first try
+  streak++;
+  if (streak >= PER_LEVEL) {
+    streak = 0;
+    fanfare();
+    if (level() >= MAX_LEVEL) { addScore(50); party('🏆 Champion!'); say(D.CHAMP); }
+    else { save.levels[cur] = level() + 1; persist(); addScore(20); party('🎉 Level ' + level() + '!'); say(D.LEVEL_UP); }
+    renderLevel();
+    later(next, 2600);
+  } else {
+    renderLevel();
+    praise();
+    later(next, 1800);
+  }
+}
+
+/* Screens */
+function show(id) {
+  session++;
+  stopVoice();
+  if (id === 'piano') stopMusic(); else startMusic();
+  ['name', 'menu', 'quiz', 'piano', 'coloring'].forEach(s => $('#' + s).hidden = s !== id);
+}
+function goMenu() {
+  $('#hello').textContent = '👋 ' + save.name + ' ✏️';
+  document.querySelectorAll('[data-tile]').forEach(e => e.textContent = 'Level ' + levelOf(e.dataset.tile));
+  showScore(); showMusicBtn();
+  show('menu');
+}
+function openName() { $('#nameInput').value = save.name; show('name'); }
+
+$('#nameForm').addEventListener('submit', e => {
+  e.preventDefault();
+  const n = $('#nameInput').value.trim().slice(0, 16);
+  if (!n) { boing($('#nameInput')); say('Please write your name.'); return; }
+  if (n !== save.name) save = { name: n, score: 0, levels: {}, music: save.music }; // new player starts fresh
+  persist();
+  goMenu();
+  say('Hi there! Time to play!');
+});
+$('#hello').onclick = openName;
+
+/* Quiz games. sizes = items in play at levels 1..10; answer buttons grow from 2 to 4 */
+const OPTION_COUNT = [2, 2, 2, 3, 3, 3, 4, 4, 4, 4];
+const word = t => `<span class="word">${t}</span>`;
+function pickRound(m, l) {
+  const pool = m.items.slice(0, m.sizes[l - 1]);
+  const n = Math.min(OPTION_COUNT[l - 1], pool.length);
+  let t;
+  do { t = rnd(pool); } while (pool.length > 1 && t.id === lastId);
+  lastId = t.id;
+  const opts = shuffle([t, ...shuffle(pool.filter(x => x !== t)).slice(0, n - 1)]);
+  return {
+    visual: m.visual(t), say: m.say(t),
+    options: opts.map(o => ({ html: m.html ? m.html(o, l) : o.html, ok: o === t }))
+  };
+}
+const pick = (items, sizes, visual, sayFn, html) => ({ round: l => pickRound({ items, sizes, visual, say: sayFn, html }, l) });
+
+// Pick n animals whose real-life sizes differ by at least gap
+function pickSpread(items, n, gap) {
+  for (let i = 0; i < 200; i++) {
+    const p = shuffle(items).slice(0, n);
+    const r = p.map(x => x.rank).sort((a, b) => a - b);
+    if (r.every((v, j) => j === 0 || v - r[j - 1] >= gap)) return p;
+  }
+  return shuffle(items).slice(0, n);
+}
+// Levels 1-3: same animal at two sizes. 4-6: different animals drawn at their real-life scale.
+// 7-10: all drawn the same size, so the child must know which animal is bigger.
+function bigSmallRound(l) {
+  const big = Math.random() < 0.5;
+  let picks;
+  if (l <= 3) {
+    const a = rnd(D.SIZES);
+    picks = [{ html: a.html, rank: 2, s: 1 }, { html: a.html, rank: 1, s: [0.4, 0.55, 0.7][l - 1] }];
+  } else {
+    const n = l <= 5 ? 2 : l <= 8 ? 3 : 4;
+    const gap = l <= 6 ? 3 : l <= 8 ? 2 : 1;
+    picks = pickSpread(D.SIZES, n, gap).map(p => ({ ...p, s: l <= 6 ? 0.45 + 0.55 * (p.rank - 1) / 13 : 0.9 }));
+  }
+  const target = picks.reduce((a, b) => (big ? b.rank > a.rank : b.rank < a.rank) ? b : a);
+  return {
+    visual: big ? '<span class="word">BIG</span>' : '<span class="word" style="font-size:min(56px,11vw)">small</span>',
+    say: big ? D.SAY.big : D.SAY.small,
+    options: shuffle(picks).map(p => ({ html: `<span style="font-size:${p.s}em">${p.html}</span>`, ok: p === target }))
+  };
+}
+
+const MODES = {
+  warna: { title: 'Colors', ...pick(D.COLORS, [2, 3, 4, 5, 6, 7, 8, 9, 10, 10], t => word(t.id), D.SAY.warna, o => D.colorSvg(o)) },
+  numbers: { title: 'Numbers', ...pick(D.NUMBERS, [2, 3, 4, 5, 5, 6, 7, 8, 9, 10], t => `<span class="apples">${'🍎'.repeat(t.id)}</span>`, D.SAY.numbers) },
+  shape: { title: 'Shapes', ...pick(D.SHAPES, [2, 3, 3, 4, 4, 5, 5, 6, 6, 6], t => word(t.id), D.SAY.shape, (o, l) => D.shapeSvg(o, l >= 7)) },
+  animal: { title: 'Animals', ...pick(D.ANIMALS, [3, 4, 5, 6, 7, 8, 9, 10, 11, 12], t => word(t.id), D.SAY.animal) },
+  bunyi: { title: 'Animal Sounds', ...pick(D.SOUNDS, [2, 3, 4, 5, 6, 7, 8, 10, 12, 13], () => word('🔊'), D.SAY.bunyi) },
+  besarkecil: { title: 'Big & Small', round: bigSmallRound },
+  makanan: { title: 'Food', ...pick(D.FOODS, [2, 3, 4, 5, 6, 7, 8, 9, 10, 12], t => word(t.id), D.SAY.makanan) },
+  abc: { title: 'ABC', ...pick(D.LETTERS, [3, 5, 7, 9, 12, 15, 18, 21, 24, 26], t => word(t.id), D.SAY.abc) }
+};
+
+let busy = false, lastSay = '';
+function startQuiz(key) {
+  cur = key; streak = 0; lastId = null;
+  $('#quizTitle').textContent = MODES[key].title;
+  showScore();
+  show('quiz');
+  renderLevel();
+  nextRound();
+}
+function nextRound() {
+  const r = MODES[cur].round(level());
+  busy = false; missed = false;
+  $('#prompt').innerHTML = `<span class="float">${r.visual}</span>`;
+  $('#hint').textContent = '';
+  const row = $('#options');
+  row.innerHTML = '';
+  r.options.forEach(o => {
+    const b = document.createElement('button');
+    b.className = 'opt';
+    b.innerHTML = `<span class="pic">${o.html}</span>`;
+    b.onclick = () => choose(b, o.ok);
+    row.appendChild(b);
+  });
+  lastSay = r.say;
+  later(() => say(lastSay), 350);
+}
+function choose(btn, correct) {
+  if (busy || btn.disabled) return;
+  if (!correct) {
+    missed = true;
+    btn.classList.add('wrong');
+    btn.disabled = true;
+    $('#hint').textContent = 'Oops! Try again!';
+    oops();
+    return;
+  }
+  busy = true;
+  btn.classList.add('right');
+  document.querySelectorAll('.opt').forEach(b => b.disabled = true);
+  $('#hint').textContent = 'Wow! Good job!';
+  scoreCorrect(nextRound);
+}
+$('#replay').onclick = () => say(lastSay);
+$('#prompt').onclick = () => say(lastSay); // tap the picture to hear it again
+
+/* Piano: watch the keys light up, then press the same keys. Longer tunes and more keys at higher levels */
+const SCALE = [60, 62, 64, 65, 67, 69, 71];
+const NOTE_NAMES = ['Do', 'Re', 'Mi', 'Fa', 'So', 'La', 'Ti'];
+const KEY_COLORS = ['#e53935', '#fb8c00', '#f9a825', '#43a047', '#1e88e5', '#3949ab', '#8e24aa'];
+const KEYSETS = { 3: [0, 2, 4], 5: [0, 1, 2, 4, 5], 7: [0, 1, 2, 3, 4, 5, 6] };
+const TUNE_LENGTH = [1, 1, 2, 2, 3, 3, 3, 4, 4, 5];
+let seq = [], idx = 0, pianoBusy = true;
+
+function playKey(k) {
+  if (!ensureAudio()) return;
+  tone(midi(SCALE[k]), audio.currentTime, 1.4, 0.6, audio.destination);
+}
+function lightKey(k) {
+  const el = document.querySelector(`.key[data-k="${k}"]`);
+  playKey(k);
+  if (!el) return;
+  el.classList.add('lit');
+  setTimeout(() => el.classList.remove('lit'), 450);
+}
+function startPiano() {
+  cur = 'piano'; streak = 0;
+  showScore();
+  show('piano');
+  renderLevel();
+  newTune();
+}
+function newTune() {
+  const l = level();
+  const set = KEYSETS[l <= 3 ? 3 : l <= 6 ? 5 : 7];
+  $('#keys').innerHTML = set.map(k =>
+    `<button class="key" data-k="${k}" style="background:${KEY_COLORS[k]}">${NOTE_NAMES[k]}</button>`).join('');
+  seq = Array.from({ length: TUNE_LENGTH[l - 1] }, () => rnd(set));
+  missed = false;
+  say(D.SAY.piano);
+  playTune(1800);
+}
+function playTune(delay) {
+  pianoBusy = true; idx = 0;
+  $('#hintPiano').textContent = 'Listen... 👂';
+  seq.forEach((k, i) => later(() => lightKey(k), delay + i * 700));
+  later(() => { pianoBusy = false; $('#hintPiano').textContent = 'Your turn! 👆'; }, delay + seq.length * 700);
+}
+$('#keys').addEventListener('pointerdown', e => {
+  const el = e.target.closest('.key');
+  if (!el) return;
+  const k = Number(el.dataset.k);
+  playKey(k);
+  if (pianoBusy) return;
+  if (k === seq[idx]) {
+    idx++;
+    if (idx === seq.length) { pianoBusy = true; $('#hintPiano').textContent = 'Wow! Good job!'; scoreCorrect(newTune); }
+  } else {
+    missed = true;
+    oops();
+    $('#hintPiano').textContent = 'Oops, try again!';
+    playTune(2200);
+  }
+});
+$('#replayPiano').onclick = () => { if (!pianoBusy) playTune(200); };
+
+/* Coloring: one picture per level */
+const COLORS = ['#ff6b8b', '#ffca28', '#43a047', '#4fc3f7', '#ab47bc', '#ff7043'];
+let paintColor = COLORS[0], picDone = false;
+
+function loadPic() {
+  const l = levelOf('coloring');
+  $('#canvas').innerHTML = D.PICTURES[l - 1];
+  $('#lvlC').textContent = 'Level ' + l + ' / ' + MAX_LEVEL;
+  picDone = false;
+}
+function fill(el) {
+  if (!el || !el.classList || !el.classList.contains('region') || picDone) return;
+  el.style.fill = paintColor; // inline style: the .region CSS fill would beat a fill attribute
+  boing(el);
+  if (!el.dataset.filled) { el.dataset.filled = '1'; addScore(2); }
+  if (![...document.querySelectorAll('#canvas .region')].every(r => r.dataset.filled)) { praise(); return; }
+  picDone = true;
+  addScore(20);
+  fanfare();
+  const l = levelOf('coloring');
+  if (l >= MAX_LEVEL) { save.levels.coloring = 1; party('🏆 Champion!'); say(D.CHAMP); } // start again from picture 1
+  else { save.levels.coloring = l + 1; party('🎨 Done! Level ' + (l + 1)); say('Wow! All done! So pretty! Good job!'); }
+  persist();
+  later(() => { loadPic(); say('Here is a new picture!'); }, 3000);
+}
+
+$('#palette').innerHTML = COLORS.map((c, i) =>
+  `<button class="swatch${i === 0 ? ' sel' : ''}" style="background:${c}" data-c="${c}" aria-label="Color"></button>`).join('');
+
+// Drag a colour from the palette and drop it on the picture
+let blob = null;
+function moveBlob(e) { if (blob) { blob.style.left = e.clientX + 'px'; blob.style.top = e.clientY + 'px'; } }
+function removeBlob() { if (blob) { blob.remove(); blob = null; } }
+$('#palette').addEventListener('pointerdown', e => {
+  const b = e.target.closest('.swatch');
+  if (!b) return;
+  e.preventDefault();
+  paintColor = b.dataset.c;
+  document.querySelectorAll('.swatch').forEach(s => s.classList.toggle('sel', s === b));
+  removeBlob();
+  blob = document.createElement('div');
+  blob.className = 'blob';
+  blob.style.background = paintColor;
+  document.body.appendChild(blob);
+  moveBlob(e);
+});
+window.addEventListener('pointermove', moveBlob);
+window.addEventListener('pointerup', e => {
+  if (!blob) return;
+  removeBlob();
+  fill(document.elementFromPoint(e.clientX, e.clientY));
+});
+window.addEventListener('pointercancel', removeBlob);
+// Tapping a part of the picture also fills it with the selected colour
+$('#canvas').onclick = e => fill(e.target);
+$('#clearPaint').onclick = () => {
+  document.querySelectorAll('#canvas .region').forEach(r => { r.style.fill = ''; delete r.dataset.filled; });
+  picDone = false;
+};
+
+/* Navigation */
+document.querySelectorAll('[data-mode]').forEach(b => b.onclick = () => {
+  const m = b.dataset.mode;
+  if (m === 'coloring') { cur = 'coloring'; loadPic(); showScore(); show('coloring'); say('Time to color!'); }
+  else if (m === 'piano') startPiano();
+  else startQuiz(m);
+});
+document.querySelectorAll('[data-back]').forEach(b => b.onclick = goMenu);
+
+if (save.name) goMenu(); else openName();
+</script>
+</body>
+</html>
